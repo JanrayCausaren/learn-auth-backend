@@ -14,9 +14,13 @@ router.use((req: Request, res: Response, next: NextFunction) => {
 
 
 router.get("/", (req: Request, res: Response) => {
-  res.json({
-    message: "ROUTERRRR LEVEL INDEX",
-  });
+
+throw new Error("Error  ocuur");
+
+
+    //   res.json({
+//     message: "ROUTERRRR LEVEL INDEX",
+//   });
 });
 router.get("/new", (req: Request, res: Response) => {
   res.json({

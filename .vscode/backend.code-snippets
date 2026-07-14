@@ -1,0 +1,91 @@
+{
+  "Express Controller": {
+    "prefix": "ex-controller",
+    "body": [
+      "import { type Request, type Response, type NextFunction } from 'express';",
+      "",
+      "export async function ${1:name}(req: Request, res: Response, next: NextFunction) {",
+      "  try {",
+      "    $0",
+      "  } catch (err) {",
+      "    next(err);",
+      "  }",
+      "}",
+    ],
+  },
+
+  "Route Handler": {
+    "prefix": "ex-route-handler",
+    "body": ["(req: Request, res: Response) => {", "  $0", "}"],
+    "description": "Express inline route handler",
+  },
+
+  "Import Controller Types": {
+    "prefix": "ex-imp-type-route-handler",
+    "body": [
+      "import { type Request, type Response, type NextFunction } from 'express';",
+    ],
+  },
+
+  "Express Router": {
+    "prefix": "ex-router",
+    "body": [
+      "import { Router } from 'express';",
+      "",
+      "const router = Router();",
+      "",
+      "$0",
+      "",
+      "export default router;",
+    ],
+  },
+
+  "Express Async Function": {
+    "prefix": "ex-async-function",
+    "body": [
+      "export async function register(data: DataType) {",
+      "  $0",
+      "}",
+    ],
+  },
+
+  "Express Middleware": {
+    "prefix": "ex-middleware",
+    "body": [
+      "import { type Request, type Response, type NextFunction } from 'express';",
+      "",
+      "export function ${1:name}(req: Request, res: Response, next: NextFunction) {",
+      "  $0",
+      "  next();",
+      "}",
+    ],
+  },
+
+  "Express Error Handler": {
+    "prefix": "ex-error-handler",
+    "body": [
+      "import { type Request, type Response, type NextFunction } from 'express';",
+      "",
+      "export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {",
+      "  if (res.headersSent) {",
+      "    return next(err);",
+      "  }",
+      "",
+      "  res.status(500).json({",
+      "    message: err.message",
+      "  });",
+      "}",
+    ],
+  },
+
+  "Zod Object": {
+    "prefix": "ex-zod-object",
+    "body": [
+      "import { z } from 'zod';",
+      "",
+      "export const ${1:schema} = z.object({",
+      "  $0",
+      "});",
+    ],
+  },
+}
