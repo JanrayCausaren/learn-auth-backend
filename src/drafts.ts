@@ -4,7 +4,6 @@ import express, {
   type Response,
 } from "express";
 import routerLevelRoutes from "./middleware/router.level.routes.js";
-import loginRoutes from "./feature/auth/login/login.routes.js";
 
 const app = express();
 
@@ -45,7 +44,6 @@ app.get("/janr", (req, res) => {
 });
 
 app.use("/router-level", routerLevelRoutes);
-app.use("/login", loginRoutes);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({

@@ -42,11 +42,7 @@
 
   "Express Async Function": {
     "prefix": "ex-async-function",
-    "body": [
-      "export async function register(data: DataType) {",
-      "  $0",
-      "}",
-    ],
+    "body": ["export async function register(data: DataType) {", "  $0", "}"],
   },
 
   "Express Middleware": {
@@ -73,6 +69,20 @@
       "",
       "  res.status(500).json({",
       "    message: err.message",
+      "  });",
+      "}",
+    ],
+  },
+  "Normal Handler": {
+    "prefix": "ex-normal-handler",
+    "body": [
+      "export async function ${1:handlerName}(",
+      "  req: Request,",
+      "  res: Response",
+      ") {",
+      "  $0",
+      "  return res.status(${2:200}).json({",
+      "    message: '${3:Success}'",
       "  });",
       "}",
     ],

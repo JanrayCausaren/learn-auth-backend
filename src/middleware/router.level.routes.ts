@@ -12,15 +12,12 @@ router.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-
 router.get("/", (req: Request, res: Response) => {
+  throw new Error("Error  ocuur");
 
-throw new Error("Error  ocuur");
-
-
-    //   res.json({
-//     message: "ROUTERRRR LEVEL INDEX",
-//   });
+  //   res.json({
+  //     message: "ROUTERRRR LEVEL INDEX",
+  //   });
 });
 router.get("/new", (req: Request, res: Response) => {
   res.json({
@@ -34,6 +31,5 @@ router.get("/new2", (req: Request, res: Response) => {
   });
   console.log("Login page accessed");
 });
-
 
 export default router;
