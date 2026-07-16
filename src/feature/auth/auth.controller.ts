@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { loginService, registerService } from "./auth.services.js";
 import { loginBodySchema, registerBodySchema } from "./auth.schema.js";
+import { successResponse } from "../../utils/success.js";
 
 // handler if not using async handler utils
 // export async function register(
@@ -20,7 +21,14 @@ import { loginBodySchema, registerBodySchema } from "./auth.schema.js";
 export async function register(req: Request, res: Response) {
   const reqBody = registerBodySchema.parse(req.body);
   const user = await registerService(reqBody);
-  return res.status(201).json(user);
+
+  // return res.status(201).json(user);
+  return successResponse({
+    res,
+    statusCode: 201,
+    data: user,
+    message: "User Registered Successfully",
+  });
 }
 
 export async function login(req: Request, res: Response) {
