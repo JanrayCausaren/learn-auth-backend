@@ -6,3 +6,11 @@ export async function registerRepository(data: RegisterBody) {
     data,
   });
 }
+
+export async function findUserByEmail(email: string) {
+  return prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+}

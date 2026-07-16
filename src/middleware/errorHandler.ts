@@ -216,7 +216,7 @@ export function errorHandler(
     return sendErrorDev(error, res);
   }
 
-  return errorResponse({ res, message: err.message, statusCode: 500 });
+  return errorResponse({ res, message: err.message, statusCode: err.statusCode });
   // return res.status(500).json({
   //   message: err.message,
   // });

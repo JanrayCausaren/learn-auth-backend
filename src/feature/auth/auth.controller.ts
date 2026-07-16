@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { loginService, registerService } from "./auth.services.js";
-import { loginBodySchema, registerBodySchema } from "./auth.schema.js";
+import { loginBodySchema, registerBodySchema, type RegisterBody } from "./auth.schema.js";
 import { successResponse } from "../../utils/success.js";
 
 // handler if not using async handler utils
