@@ -19,5 +19,14 @@ export const registerRequest = z.object({
   query: z.any().optional(),
 });
 
+export const loginRequest = z.object({
+  body: registerBodySchema,
+  params: z.any().optional(),
+  query: z.any().optional(),
+});
+
+
+
+
 export type RegisterBody = z.infer<typeof registerBodySchema>;
 export type LoginBody = z.infer<typeof loginBodySchema>;

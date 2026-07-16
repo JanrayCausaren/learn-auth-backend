@@ -1,4 +1,8 @@
-import { AppError } from "../../utils/app.error.js";
+import {
+  AppError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../../utils/app.error.js";
 import * as repository from "./auth.repository.js";
 import type { LoginBody, RegisterBody } from "./auth.schema.js";
 import bcrypt from "bcrypt";
@@ -8,7 +12,7 @@ import bcrypt from "bcrypt";
 // }
 
 export async function registerService(data: RegisterBody) {
-  //normalization
+  //normalization / sanitize
   const email = data.email.trim().toLowerCase();
   // console.log(email);
 
@@ -24,17 +28,32 @@ export async function registerService(data: RegisterBody) {
 
   // hashed password
   const hashedPassword = await bcrypt.hash(data.password, 12);
-  data.password = hashedPassword
+  data.password = hashedPassword;
   // console.log(data.password);
 
   return repository.registerRepository(data);
 }
 
 export async function loginService(data: LoginBody) {
-  const existingUser = data.username === "janray";
-  if (existingUser) {
-    throw new Error("User already exists");
+  //normalization / sanitize
+  const email = data.email.trim().toLowerCase();
+  const existingUser = await repository.findUserByEmail(email);
+
+  if (!existingUser) {
+    throw new NotFoundError("Invalid email or password");
   }
 
-  return null;
+  const isMatch = await bcrypt.compare(data.password, existingUser.password);
+
+  if (!isMatch) {
+    throw new UnauthorizedError("Invalid email or password");
+  }
+
+  // TODO:
+  // Check if account is verified/active (optional)
+
+  // TODO:
+  // Generate JWT
+
+  return existingUser;
 }

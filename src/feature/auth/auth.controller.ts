@@ -35,7 +35,11 @@ export async function login(req: Request, res: Response) {
   const reqBody = loginBodySchema.parse(req.body);
   const login = await loginService(reqBody);
 
-  return res.status(200).json({
-    message: "Success",
+  return successResponse({
+    res,
+    statusCode: 200,
+    data: login,
+    message: "Login Successfully",
   });
 }
+
