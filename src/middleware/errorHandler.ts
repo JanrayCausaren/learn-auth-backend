@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { ZodError } from "zod";
 import { Prisma } from "../../generated/prisma/client";
 import { AppError } from "../utils/app.error";
-
+import { errorResponse } from "../utils/error";
 
 // PrismaClientKnownRequestError
 // Thrown when the database rejects a valid Prisma query with a known error.
@@ -75,7 +75,7 @@ const handlePrismaKnownError = (
       message: err.message,
       statusCode: 500,
       code: err.code,
-      isOperational: true,
+      // isOperational: true,
     })
   );
 };
@@ -135,32 +135,51 @@ const handlePrismaValidationError = (
     message: err.message,
     statusCode: 500,
     code: "PRISMA_VALIDATION_ERROR",
-    isOperational: true,
+    // isOperational: true,
   });
 };
+
+// const sendErrorDev = (err: AppError, res: Response) => {
+//   return res.status(err.statusCode || 500).json({
+//     success: false,
+//     statusCode: err.statusCode,
+//     code: err.code,
+//     // status: err.name || "error",
+//     message: err.message,
+//     // error: err,
+//     stack: err.stack
+//   });
+// };
 
 const sendErrorDev = (err: AppError, res: Response) => {
-  return res.status(err.statusCode || 500).json({
-    success: false,
-    statusCode: err.statusCode, 
-    code: err.code,
-    // status: err.name || "error",
+  return errorResponse({
+    res,
+    statusCode: err.statusCode,
     message: err.message,
-    // error: err,
-    stack: err.stack
+    errorCode: err.code,
+    // errors: err,
+    stackTrace: err.stack,
   });
 };
 
-
 const sendErrorProd = (err: AppError, res: Response) => {
-  return res.status(err.statusCode || 500).json({
-    status:  err.statusCode, 
-    message: err.message, 
-    error: err
+  return errorResponse({
+    res,
+    statusCode: err.statusCode,
+    message: err.message,
+    errorCode: err.code,
+    // errors: err,
+    // stackTrace: err.stack,
   });
+};
 
-}
-
+// const sendErrorProd = (err: AppError, res: Response) => {
+//   return res.status(err.statusCode || 500).json({
+//     status: err.statusCode,
+//     message: err.message,
+//     error: err,
+//   });
+// };
 
 export function errorHandler(
   err: AppError,
@@ -179,16 +198,26 @@ export function errorHandler(
       })),
     });
   }
+  // if (err instanceof ZodError) {
+  //   return errorResponse({
+  //     res,
+  //     message: err.message.,
+  //     statusCode: 400,
+  //     errors: err.issues.map((issue) => ({
+  //       field: issue.path.join("."),
+  //       message: issue.message,
+  //     })),
+  //   });
+  // }
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     console.log("known error");
-    console.log(err.code);
-
     error = handlePrismaKnownError(err);
     return sendErrorDev(error, res);
   }
 
-  return res.status(500).json({
-    message: err.message,
-  });
+  return errorResponse({ res, message: err.message, statusCode: 500 });
+  // return res.status(500).json({
+  //   message: err.message,
+  // });
 }
