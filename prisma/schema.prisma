@@ -14,14 +14,15 @@ model User {
   email    String @unique
   password String
 
-  // isEmailVerified Boolean   @default(false)
-  // emailVerifiedAt DateTime?
+  isEmailVerified Boolean   @default(false)
+  emailVerifiedAt DateTime?
 
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  deletedAt  DateTime?
-  profile    Profile?
-  credential Credential?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+  profile            Profile?
+  credential         Credential?
+  verificationTokens VerificationToken[]
 
   @@map("users")
 }
@@ -57,4 +58,16 @@ model Credential {
   updatedAt DateTime @updatedAt
 
   @@map("credentials")
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("verification_tokens")
 }

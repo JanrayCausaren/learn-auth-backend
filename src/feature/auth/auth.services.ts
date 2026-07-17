@@ -40,7 +40,7 @@ export async function loginService(data: LoginBody) {
   const existingUser = await repository.findUserByEmail(email);
 
   if (!existingUser) {
-    throw new NotFoundError("Invalid email or password");
+    throw new UnauthorizedError("Invalid email or password");
   }
 
   const isMatch = await bcrypt.compare(data.password, existingUser.password);
@@ -49,11 +49,13 @@ export async function loginService(data: LoginBody) {
     throw new UnauthorizedError("Invalid email or password");
   }
 
+  const {password, ...user} = existingUser
+
   // TODO:
   // Check if account is verified/active (optional)
 
   // TODO:
   // Generate JWT
 
-  return existingUser;
+  return user;
 }

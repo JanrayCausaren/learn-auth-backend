@@ -61,3 +61,21 @@ The user is automatically logged in after registering.
 # ratelimiting
 
 - Rate limiting is a technique that restricts the number of requests a client (like a user or bot) can make to a server or API within a specific time window.
+
+
+
+# login
+- Security best practices
+- Validate input before it reaches the service (e.g., with Zod).
+- Return the same error message for both an unknown email and an incorrect password (Invalid email or password) to avoid revealing which emails are registered.
+- Store passwords only as bcrypt hashes—never in plain text.
+- Exclude sensitive fields (password hash, reset tokens, etc.) from responses.
+- Store the JWT secret in environment variables, not in source code.
+- Consider adding rate limiting to the login endpoint to reduce brute-force attacks.
+- Prefer sending JWTs in secure, HttpOnly cookies for browser-based applications. If you're building a mobile app or a separate frontend/backend API, returning the token in the response body is also a common approach, provided the client stores it securely.
+
+
+
+## There are two common ways to keep users logged in:
+- Session-based authentication
+- JWT-based authentication

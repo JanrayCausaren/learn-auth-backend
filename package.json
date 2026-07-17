@@ -6,7 +6,17 @@
   "scripts": {
     "dev": "tsx watch src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js", 
+
+    "prisma:migrate" : "prisma migrate dev", 
+    "prisma:generate" : "prisma generate",
+    "prisma:studio" : "prisma studio", 
+    "prisma:status" : "prisma migrate status", 
+    "prisma:reset" : "prisma migrate reset", 
+    "prisma:pull" : "prisma db pull", 
+    "prisma:push" : "prisma db push",
+    "prisma:validate" : "prisma validate"
+
   },
   "keywords": [],
   "author": "",
