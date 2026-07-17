@@ -7,11 +7,14 @@ import { generateVerificationToken, hashToken } from "../../utils/token.js";
 import * as repository from "./auth.repository.js";
 import type { LoginBody, RegisterBody } from "./auth.schema.js";
 import bcrypt from "bcrypt";
+import { sendVerificationEmail } from "./email.service.js";
+import type { User } from "./auth.model.js";
 // export async function registerService(data: RegisterBody) {
 //   const result = await registerRepository(data);
 //   return null;
 // }
 
+// Signup - creating an account
 export async function registerService(data: RegisterBody) {
   //normalization / sanitize
   const email = data.email.trim().toLowerCase();
@@ -21,12 +24,8 @@ export async function registerService(data: RegisterBody) {
   const existingUser = await repository.findUserByEmail(email);
 
   if (existingUser) {
-    throw new AppError({
-      message: "User Already Existed",
-      statusCode: 409,
-    });
+    return await resendVerificationService(email);
   }
-
   // hashed password
   const hashedPassword = await bcrypt.hash(data.password, 12);
   data.password = hashedPassword;
@@ -38,20 +37,11 @@ export async function registerService(data: RegisterBody) {
     password: hashedPassword,
   });
 
-  // for email verification
-  // Generate verification token
-  const token = generateVerificationToken();
-  // Hash the token before storing it
-  const hashedToken = hashToken(token);
+  await generateTokenAndSendVerificationEmail(user);
 
-  // Save the verification token
-  await repository.createVerificationToken({
-    token: hashedToken,
-    expiresAt: new Date(),
-    userId: user.id,
-  });
+  const { password, ...returnData } = user;
 
-  return user;
+  return returnData;
 }
 
 export async function loginService(data: LoginBody) {
@@ -69,6 +59,13 @@ export async function loginService(data: LoginBody) {
     throw new UnauthorizedError("Invalid email or password");
   }
 
+  if (!existingUser.isEmailVerified) {
+    throw new AppError({
+      message: "Please verify your email.",
+      statusCode: 403,
+    });
+  }
+
   const { password, ...user } = existingUser;
 
   // TODO:
@@ -78,4 +75,87 @@ export async function loginService(data: LoginBody) {
   // Generate JWT
 
   return user;
+}
+
+const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+async function generateTokenAndSendVerificationEmail(user: User) {
+  // for email verification
+  // Generate verification token
+  const token = generateVerificationToken();
+  console.log(token);
+
+  // Hash the token before storing it
+  const hashedToken = hashToken(token);
+  console.log(hashedToken);
+
+  // Save the verification token
+  await repository.createVerificationToken({
+    token: hashedToken,
+    expiresAt: expiresAt,
+    userId: user.id,
+  });
+  // send vefication email through email
+  await sendVerificationEmail(user.email, token);
+}
+
+export async function verifyEmailService(token: string) {
+  const hashedToken = hashToken(token);
+
+  const storedToken = await repository.findVerificationToken(hashedToken);
+
+  //invalid token no token found
+  if (!storedToken) {
+    throw new AppError({
+      statusCode: 400,
+      message: "Invalid Verification Token",
+    });
+  }
+
+  // check if the token is expired
+  if (storedToken.expiresAt < new Date()) {
+    throw new AppError({
+      statusCode: 400,
+      message: "Verification token has expired.",
+    });
+  }
+
+  //update
+  await repository.updateToVerifiedUser(storedToken.userId);
+
+  //delete verification token
+  await repository.deleteVerificationToken(storedToken.id);
+
+  const user = await repository.findUserById(storedToken.userId);
+  const { password, ...data } = user!;
+
+  return data;
+}
+
+export async function resendVerificationService(email: string) {
+  const normalizeEmail = email.trim().toLowerCase();
+
+  const user = await repository.findUserByEmail(normalizeEmail);
+
+  if (!user) {
+    throw new NotFoundError("User not found.");
+  }
+
+  if (user.isEmailVerified) {
+    throw new AppError({
+      message: "User Already Existed",
+      statusCode: 409,
+    });
+  }
+
+  const token = await repository.findVerificationTokenByUserId(user.id);
+
+  if (token && token.expiresAt > new Date()) {
+    // return "A verification email has already been sent. Please check your inbox." 
+    return
+  }
+     
+  await repository.deleteVerificationTokensByUserId(user.id);
+  await generateTokenAndSendVerificationEmail(user);
+
+  // return user;
 }
