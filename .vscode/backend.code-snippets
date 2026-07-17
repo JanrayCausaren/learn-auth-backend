@@ -87,6 +87,15 @@
       "}",
     ],
   },
+  "Export Function": {
+    "prefix": "ex-function",
+    "body": [
+     "export function ${1:handlerName}() {",
+     "return;",
+    "}"
+
+    ],
+  },
 
   "Zod Object": {
     "prefix": "ex-zod-object",

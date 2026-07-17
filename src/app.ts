@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import express, {
   type NextFunction,
   type Request,
@@ -8,7 +9,9 @@ import authRoutes from "./feature/auth/auth.routes.js";
 import { ZodError } from "zod";
 import { errorHandler } from "./middleware/errorHandler.js";
 
+dotenv.config()
 const app = express();
+
 
 app.use(express.json())
 
