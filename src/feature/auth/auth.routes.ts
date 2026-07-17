@@ -4,7 +4,7 @@ import { login, register } from "./auth.controller.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { validateRequest } from "../../middleware/validateRequest.js";
 import { loginRequest, registerRequest } from "./auth.schema.js";
-import { limiter } from "../../middleware/rateLimit.js";
+import { limiter, loginLimiter } from "../../middleware/rateLimit.js";
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router.post(
 
 router.post(
   "/login",
-  limiter,
+  loginLimiter,
   validateRequest(loginRequest),
   asyncHandler(login),
 );

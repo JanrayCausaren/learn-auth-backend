@@ -1,4 +1,5 @@
 import { rateLimit } from "express-rate-limit";
+import { createRateLimiter } from "../utils/createRateLimiter";
 
 export const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -7,3 +8,10 @@ export const limiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   ipv6Subnet: 56, // Set to 60 or 64 to be less aggressive, or 52 or 48 to be more aggressive
 });
+
+
+export const loginLimiter = createRateLimiter({
+  limit: 5, 
+  windowMs: 10 * 60 * 1000, // 10  minutes 
+  message: "Too many request hahah"
+})
