@@ -23,6 +23,7 @@ model User {
   profile            Profile?
   credential         Credential?
   verificationTokens VerificationToken[]
+  cooldowns          Cooldown[]
 
   @@map("users")
 }
@@ -70,4 +71,22 @@ model VerificationToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("verification_tokens")
+}
+
+model Cooldown {
+  id         String       @id @default(cuid())
+  userId     String
+  type       CooldownType
+  lastSentAt DateTime
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("cooldown")
+}
+
+enum CooldownType {
+  EMAIL_VERIFICATION
+  LOGIN_OTP
+  PHONE_VERIFICATION
+  PASSWORD_RESET
 }

@@ -8,6 +8,7 @@ import {
 import {
   loginBodySchema,
   registerBodySchema,
+  verifyEmailSchema,
   type RegisterBody,
 } from "./auth.schema.js";
 import { successResponse } from "../../utils/success.js";
@@ -54,9 +55,10 @@ export async function login(req: Request, res: Response) {
 }
 
 export async function verifyEmail(req: Request, res: Response) {
-  const { token } = req.body;
+  const query = verifyEmailSchema.parse(req.query)
+  // const { token } = req.query;
   
-  const verifiedUser = await verifyEmailService(token);
+  const verifiedUser = await verifyEmailService(query.token);
 
   return successResponse({
     res,

@@ -9,10 +9,7 @@ import type { LoginBody, RegisterBody } from "./auth.schema.js";
 import bcrypt from "bcrypt";
 import { sendVerificationEmail } from "./email.service.js";
 import type { User } from "./auth.model.js";
-// export async function registerService(data: RegisterBody) {
-//   const result = await registerRepository(data);
-//   return null;
-// }
+import { CooldownType } from "../../../generated/prisma/enums.js";
 
 // Signup - creating an account
 export async function registerService(data: RegisterBody) {
@@ -96,6 +93,13 @@ async function generateTokenAndSendVerificationEmail(user: User) {
   });
   // send vefication email through email
   await sendVerificationEmail(user.email, token);
+
+  // store  timestamp for the email verification for cooldown purposes
+  await repository.upsertCooldown({
+    userId: user.id,
+    type: "EMAIL_VERIFICATION",
+    lastSentAt: new Date(),
+  });
 }
 
 export async function verifyEmailService(token: string) {
@@ -147,13 +151,25 @@ export async function resendVerificationService(email: string) {
     });
   }
 
-  const token = await repository.findVerificationTokenByUserId(user.id);
+  const cooldown = await repository.findCooldownByUserAndType(
+    user.id,
+    CooldownType.EMAIL_VERIFICATION,
+  );
+  const COOLDOWN_MS = 1000 * 60; // 60 SECONDS
 
-  if (token && token.expiresAt > new Date()) {
-    // return "A verification email has already been sent. Please check your inbox." 
-    return
+  if (cooldown) {
+    const diff = Date.now() - cooldown.lastSentAt.getTime();
+
+    if (diff < COOLDOWN_MS){
+       const remainingSeconds = Math.ceil((COOLDOWN_MS - diff) / 1000);
+
+      throw new AppError({
+        statusCode: 429,
+        message: `Please wait ${remainingSeconds} seconds before requesting another verification email.`,
+      });
+    }
   }
-     
+
   await repository.deleteVerificationTokensByUserId(user.id);
   await generateTokenAndSendVerificationEmail(user);
 

@@ -1,5 +1,6 @@
+import type { CooldownType } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
-import type { CreateVerificationTokenType } from "./auth.model";
+import type { CooldownData, CreateVerificationTokenType } from "./auth.model";
 import type { RegisterBody } from "./auth.schema";
 
 export async function registerRepository(data: RegisterBody) {
@@ -79,6 +80,36 @@ export async function findVerificationTokenByUserId(userId: string) {
     },
     orderBy: {
       createdAt: "desc",
+    },
+  });
+}
+
+export async function findCooldownByUserAndType(
+  userId: string,
+  type: CooldownType,
+) {
+  return prisma.cooldown.findUnique({
+    where: {
+      userId_type: {
+        type: type,
+        userId,
+      },
+    },
+  });
+}
+
+/// create and update if existing
+export async function upsertCooldown(data: CooldownData) {
+  return prisma.cooldown.upsert({
+    create: data,
+    update: {
+      lastSentAt: data.lastSentAt,
+    },
+    where: {
+      userId_type: {
+        type: data.type,
+        userId: data.userId,
+      },
     },
   });
 }
