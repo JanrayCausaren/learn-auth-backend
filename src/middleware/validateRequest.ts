@@ -22,7 +22,7 @@ export const validateRequest = (schema: z.ZodType<RequestSchema>) => {
       return errorResponse({
         res,
         statusCode: 400,
-        message: "Validation failed from middleware",
+        message: "Validation failed from validation middleware",
         errors: result.error.issues.map((issue) => ({
           field: issue.path.join("."),
           message: issue.message,

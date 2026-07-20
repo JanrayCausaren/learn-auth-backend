@@ -1,8 +1,9 @@
-import type { CooldownType } from "../../../generated/prisma/client";
+import type { CooldownType, VerificationTokenType } from "../../../generated/prisma/client";
 
 export type CreateVerificationTokenType = {
   token: string;
   userId: string;
+  tokenType: VerificationTokenType;
   expiresAt: Date;
 };
 

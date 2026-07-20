@@ -64,12 +64,15 @@ model Credential {
 model VerificationToken {
   id        String   @id @default(cuid())
   token     String   @unique
+  tokenType VerificationTokenType
   userId    String
-  expiresAt DateTime
   createdAt DateTime @default(now())
+  expiresAt DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, tokenType])
+  @@index([userId, tokenType]) 
   @@map("verification_tokens")
 }
 
@@ -88,5 +91,11 @@ enum CooldownType {
   EMAIL_VERIFICATION
   LOGIN_OTP
   PHONE_VERIFICATION
+  PASSWORD_RESET
+}
+
+
+enum VerificationTokenType {
+  EMAIL_VERIFICATION
   PASSWORD_RESET
 }

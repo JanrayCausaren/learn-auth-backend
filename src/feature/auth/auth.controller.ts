@@ -1,13 +1,18 @@
 import { type Request, type Response, type NextFunction } from "express";
 import {
+  forgotPasswordService,
   loginService,
   registerService,
   resendVerificationService,
+  resetPasswordService,
   verifyEmailService,
 } from "./auth.services.js";
 import {
+  forgotPasswordSchema,
   loginBodySchema,
   registerBodySchema,
+  resetPasswordSchema,
+  resetPasswordTokenSchema,
   verifyEmailSchema,
   type RegisterBody,
 } from "./auth.schema.js";
@@ -55,9 +60,9 @@ export async function login(req: Request, res: Response) {
 }
 
 export async function verifyEmail(req: Request, res: Response) {
-  const query = verifyEmailSchema.parse(req.query)
+  const query = verifyEmailSchema.parse(req.query);
   // const { token } = req.query;
-  
+
   const verifiedUser = await verifyEmailService(query.token);
 
   return successResponse({
@@ -70,7 +75,7 @@ export async function verifyEmail(req: Request, res: Response) {
 
 export async function resendVerification(req: Request, res: Response) {
   const { email } = req.body;
-  
+
   await resendVerificationService(email);
 
   return successResponse({
@@ -78,5 +83,33 @@ export async function resendVerification(req: Request, res: Response) {
     statusCode: 200,
     // data: result,
     message: "Resend Successfuly ",
+  });
+}
+
+export async function forgotPassword(req: Request, res: Response) {
+  const { email } = req.body;
+  await forgotPasswordService(email);
+
+  return res.status(200).json({
+    message: "Success",
+  });
+}
+
+export async function resetPassword(req: Request, res: Response) {
+  const parsedBody = resetPasswordSchema.parse(req.body);
+  const token = resetPasswordTokenSchema.parse(req.query);
+
+  // const { newPassword, confirmNewPassword } = resetPasswordSchema.parse(
+  //   req.body,
+  // );
+  // const { token } = resetPasswordTokenSchema.parse(req.query);
+
+  const result = await resetPasswordService({ body: parsedBody, query: token });
+
+  return successResponse({
+    res,
+    statusCode: 200,
+    data: result,
+    message: "Reset Password Successfully",
   });
 }

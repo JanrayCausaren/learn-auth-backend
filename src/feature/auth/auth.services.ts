@@ -5,11 +5,22 @@ import {
 } from "../../utils/app.error.js";
 import { generateVerificationToken, hashToken } from "../../utils/token.js";
 import * as repository from "./auth.repository.js";
-import type { LoginBody, RegisterBody } from "./auth.schema.js";
+import type {
+  ResetPasswordData,
+  LoginBody,
+  RegisterBody,
+} from "./auth.schema.js";
 import bcrypt from "bcrypt";
 import { sendVerificationEmail } from "./email.service.js";
 import type { User } from "./auth.model.js";
-import { CooldownType } from "../../../generated/prisma/enums.js";
+import {
+  CooldownType,
+  VerificationTokenType,
+} from "../../../generated/prisma/enums.js";
+import { userRepository } from "./repositories/user.repository.js";
+import { verificationTokenRepository } from "./repositories/verificationtoken.repository.js";
+import { cooldownRepository } from "./repositories/cooldown.repository.js";
+import { prisma } from "../../lib/prisma.js";
 
 // Signup - creating an account
 export async function registerService(data: RegisterBody) {
@@ -19,6 +30,7 @@ export async function registerService(data: RegisterBody) {
 
   //find existing user
   const existingUser = await repository.findUserByEmail(email);
+  // const existingUser = await userRepository.findUserByEmail(email);
 
   if (existingUser) {
     return await resendVerificationService(email);
@@ -74,7 +86,7 @@ export async function loginService(data: LoginBody) {
   return user;
 }
 
-const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 async function generateTokenAndSendVerificationEmail(user: User) {
   // for email verification
   // Generate verification token
@@ -89,6 +101,7 @@ async function generateTokenAndSendVerificationEmail(user: User) {
   await repository.createVerificationToken({
     token: hashedToken,
     expiresAt: expiresAt,
+    tokenType: "EMAIL_VERIFICATION",
     userId: user.id,
   });
   // send vefication email through email
@@ -160,8 +173,8 @@ export async function resendVerificationService(email: string) {
   if (cooldown) {
     const diff = Date.now() - cooldown.lastSentAt.getTime();
 
-    if (diff < COOLDOWN_MS){
-       const remainingSeconds = Math.ceil((COOLDOWN_MS - diff) / 1000);
+    if (diff < COOLDOWN_MS) {
+      const remainingSeconds = Math.ceil((COOLDOWN_MS - diff) / 1000);
 
       throw new AppError({
         statusCode: 429,
@@ -174,4 +187,145 @@ export async function resendVerificationService(email: string) {
   await generateTokenAndSendVerificationEmail(user);
 
   // return user;
+}
+
+export async function forgotPasswordService(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const user = await userRepository.findByEmail(normalizedEmail);
+
+  if (!user) {
+    return;
+  }
+
+  //time based actions
+  const cooldown =
+    await cooldownRepository.findCooldownTokenByUserIdAndTokenType(
+      user.id,
+      "PASSWORD_RESET",
+    );
+
+  const cooldown_ms = 1000 * 60;
+
+  if (cooldown) {
+    // result of subration of two values
+    const diff = Date.now() - cooldown.lastSentAt.getTime();
+
+    if (diff < cooldown_ms) {
+      const remainingSeconds = Math.ceil((cooldown_ms - diff) / 1000);
+      console.log(` Remainig Seconds:  ${remainingSeconds}`);
+      return;
+    }
+  }
+
+  // if (oldToken && oldToken.expiresAt < new Date()) {
+  //   return;
+  // }
+  // 3:00pm > 2:30pm
+  // if (oldToken && oldToken.expiresAt > new Date()) {
+  //   await verificationTokenRepository.deleteVerificationToken(oldToken.id);
+  // }
+
+  const token = generateVerificationToken();
+  console.log(`From Forgot Password Endpoint ${token}`);
+  const hashedToken = hashToken(token);
+
+  //transaction
+  //sequence of read/write operations guaranteed to succeed or fail as a whole
+  // await prisma.$transaction([]);
+
+  await prisma.$transaction(async (tx) => {
+    const oldToken = await verificationTokenRepository.findTokenByUserIdAndType(
+      user.id,
+      "PASSWORD_RESET",
+      tx,
+    );
+
+    if (oldToken) {
+      await verificationTokenRepository.deleteVerificationTokenByTokenId(
+        oldToken.id,
+        tx,
+      );
+    }
+
+    await verificationTokenRepository.insertVerificationToken(
+      {
+        userId: user.id,
+        token: hashedToken,
+        tokenType: "PASSWORD_RESET",
+        expiresAt,
+      },
+      tx,
+    );
+  });
+
+  await sendVerificationEmail(email, token);
+  await cooldownRepository.createOrUpdate({
+    userId: user.id,
+    type: "PASSWORD_RESET",
+    lastSentAt: new Date(),
+  });
+}
+
+export async function resetPasswordService(data: ResetPasswordData) {
+  const token = hashToken(data.query.token);
+
+  let { user, verificationToken } = await validateResetPassword(data);
+
+  const hashedPassword = await bcrypt.hash(data.body.newPassword, 12);
+
+  await prisma.$transaction(async (tx) => {
+    const updatedUser = await userRepository.updatePassword(
+      hashedPassword,
+      user.id,
+      tx,
+    );
+
+    await verificationTokenRepository.deleteVerificationTokenByUserIdAndType(
+      user.id,
+      verificationToken.tokenType,
+      tx,
+    );
+
+    console.log("------ password updated -------");
+    user = updatedUser;
+  });
+
+  const { password, deletedAt, ...returnData } = user;
+  return returnData;
+}
+
+export async function validateResetPassword(data: ResetPasswordData) {
+  const token = hashToken(data.query.token);
+
+  const verificationToken =
+    await verificationTokenRepository.findTokenByTokenAndType(
+      token,
+      "PASSWORD_RESET",
+    );
+
+  if (!verificationToken) {
+    throw new AppError({
+      statusCode: 400,
+      message: "Invalid or expired reset link.",
+    });
+  }
+
+  if (verificationToken.expiresAt < new Date()) {
+    throw new AppError({
+      statusCode: 400,
+      message: "Invalid or expired reset link.",
+    });
+  }
+
+  const user = await userRepository.findById(verificationToken.userId);
+
+  if (!user) {
+    throw new AppError({
+      statusCode: 404,
+      message: "User not found.",
+    });
+  }
+
+  return { verificationToken, user };
 }
